@@ -8,14 +8,16 @@ from dotenv import load_dotenv
 from bigquery_connector import bigquery_connector
 
 load_dotenv()
+ENVIRONMENT = os.getenv('ENVIRONMENT')
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
 PROJECT = os.getenv('BIGQUERY_PROJECT')
+assert ENVIRONMENT in ('dev', 'prod') 
 
 intents = discord.Intents.all()
 client = discord.Client(intents=intents)
 
-bigquery = bigquery_connector(PROJECT)
+bigquery = bigquery_connector(PROJECT, ENVIRONMENT)
 
 def dt_as_utc_str(datetime_obj):
     format = '%Y-%m-%d %H:%M:%S.%f'
