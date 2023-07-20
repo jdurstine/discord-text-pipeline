@@ -1,8 +1,14 @@
 CREATE TABLE dev_raw.raw_messages (
     etl_dt DATETIME NOT NULL,
-    message_id INT NOT NULL,
-    created_dt DATETIME NOT NULL,
+    msg_id INT NOT NULL,
+    msg_created_dt DATETIME NOT NULL,
+    channel_id INT NOT NULL,
+    channel_name STRING NOT NULL,
     user_id INT NOT NULL,
-    referenced_message_id INT,
-    content STRING NOT NULL
+    user_global_name STRING,
+    user_display_name STRING,
+    user_nickname STRING,
+    user_name STRING,
+    ref_msg_id INT,
+    msg_content STRING NOT NULL
 )

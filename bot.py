@@ -15,6 +15,9 @@ PROJECT = os.getenv('BIGQUERY_PROJECT')
 assert ENVIRONMENT in ('dev', 'prod') 
 
 intents = discord.Intents.all()
+intents.members = True
+intents.messages = True
+intents.message_content = True
 client = discord.Client(intents=intents)
 
 bigquery = bigquery_connector(PROJECT, ENVIRONMENT)
@@ -33,11 +36,17 @@ def message_data(message):
         ref_id = None
     
     data = {'etl_dt':dt_as_utc_str(etl_dt),
-            'message_id':message.id,
-            'created_dt':dt_as_utc_str(message.created_at),
+            'msg_id':message.id,
+            'msg_created_dt':dt_as_utc_str(message.created_at),
+            'channel_id':message.channel.id,
+            'channel_name':message.channel.name,
             'user_id':message.author.id,
-            'referenced_message_id':ref_id,
-            'content':message.content}
+            'user_global_name':message.author.global_name,
+            'user_display_name':message.author.display_name,
+            'user_nickname':message.author.nick,
+            'user_name':message.author.name,
+            'ref_msg_id':ref_id,
+            'msg_content':message.content}
     return data
 
 @client.event
