@@ -11,3 +11,10 @@ class bigquery_connector:
         table_id = f"{self.project}.{self.env}_raw.raw_messages"
         errors = self.client.insert_rows_json(table_id, [message_dict])
         print(errors)
+
+    def select_messages(self, userid):
+        query = f"""
+            SELECT msg_content
+            FROM {self.project}.{self.env}_raw.raw_messages
+            WHERE user_id={userid}"""
+        return self.client.query(query).result()
