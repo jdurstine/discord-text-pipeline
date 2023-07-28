@@ -10,7 +10,8 @@ class bigquery_connector:
     def insert_message(self, message_dict):
         table_id = f"{self.project}.{self.env}_raw.raw_messages"
         errors = self.client.insert_rows_json(table_id, [message_dict])
-        print(errors)
+        if len(errors) > 0:
+            print(errors)
 
     def select_messages(self, userid):
         query = f"""
@@ -18,3 +19,11 @@ class bigquery_connector:
             FROM {self.project}.{self.env}_raw.raw_messages
             WHERE user_id={userid}"""
         return self.client.query(query).result()
+    
+    def latest_message_dt(self, channel_id):
+        query = f"""
+            SELECT max(msg_created_dt) as max_dt
+            FROM {self.project}.{self.env}_raw.raw_messages
+            WHERE channel_id = {channel_id}"""
+        result = [row for row in self.client.query(query).result()]
+        return result[0].max_dt
