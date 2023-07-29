@@ -1,3 +1,4 @@
+import logging
 import asyncio
 from datetime import datetime, timezone
 from collections import defaultdict
@@ -18,7 +19,14 @@ def message_data(message):
         ref_id = message.reference.message_id
     else:
         ref_id = None
-    
+
+    # author can be global user or member
+    # set nickname to avoid attribute error on user
+    if type(message.author) is not discord.Member:
+        nickname = message.author.display_name
+    else:
+        nickname = message.author.nick
+
     data = {'etl_dt':dt_as_utc_str(etl_dt),
             'msg_id':message.id,
             'msg_created_dt':dt_as_utc_str(message.created_at),
@@ -27,7 +35,7 @@ def message_data(message):
             'user_id':message.author.id,
             'user_global_name':message.author.global_name,
             'user_display_name':message.author.display_name,
-            'user_nickname':message.author.nick,
+            'user_nickname':nickname,
             'user_name':message.author.name,
             'ref_msg_id':ref_id,
             'msg_content':message.content}
@@ -64,17 +72,6 @@ class BeanBotClient(discord.Client):
         # create the background task and run it in the background
         self.bg_task = self.loop.create_task(self.extract_messages())
 
-    async def on_ready(self):
-        for guild in self.guilds:
-            if guild.name == self.config.GUILD:
-                self.guild = guild
-                break
-            
-        print(
-            f'{self.user} is connected to the following guild:\n'
-            f'{self.guild.name}(id: {self.guild.id})'
-        )
-
     async def on_message(self, message):
         if message.content == '!quit':
             await self.close()
@@ -88,7 +85,7 @@ class BeanBotClient(discord.Client):
         await self.wait_until_ready()
         for guild in self.guilds:
             if guild.name == self.config.GUILD:
-                self.guild = guild
+                self.guild = guild # can this be placed somewhere better?
         while not self.is_closed():
             for channel in self.guild.channels:
                 latest_dt = self.db_client.latest_message_dt(channel.id)
@@ -99,8 +96,8 @@ class BeanBotClient(discord.Client):
                     async for message in channel.history(limit=None, after=latest_dt, oldest_first=True):
                         self.db_client.insert_message(message_data(message))
                         count += 1
-                except AttributeError:
-                    print(f"Failed loading messages from {self.guild.name} - {channel.name}")
+                except Exception as inst:
+                    logging.warning(f"Failed loading messages from {self.guild.name} - {channel.name} - {inst}")
                 else:
-                    print(f"Loaded {count} messages from {self.guild.name} - {channel.name}")
+                    logging.info(f"Loaded {count} messages from {self.guild.name} - {channel.name}")
             await asyncio.sleep(60)

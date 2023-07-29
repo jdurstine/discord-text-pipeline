@@ -1,3 +1,5 @@
+import logging
+
 import discord
 
 import client
@@ -11,5 +13,6 @@ intents.members = True
 intents.messages = True
 intents.message_content = True
 
+discord.utils.setup_logging()
 client = client.BeanBotClient(intents=intents, db_client=bigquery, config=config)
 client.run(config.TOKEN)
