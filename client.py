@@ -51,6 +51,8 @@ def top_words(db_client, limit, user_id):
     stopwords.append("'s")
     stopwords.append("'m")
     stopwords.append("n't")
+    stopwords.append("'re")
+    stopwords.append("https")
 
     # get count of instances for each token
     for row in messages:
