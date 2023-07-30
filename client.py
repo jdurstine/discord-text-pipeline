@@ -80,7 +80,21 @@ class BeanBotClient(discord.Client):
             top_ten = top_words(self.db_client, 10, message.author.id)
             channel = message.channel
             await channel.send(top_ten)
-    
+
+    async def _pull_messages(self, channel):
+        latest_dt = self.db_client.latest_message_dt(channel.id)
+        if latest_dt is not None:
+            latest_dt = latest_dt.replace(tzinfo=timezone.utc)
+        try:
+            count = 0
+            async for message in channel.history(limit=None, after=latest_dt, oldest_first=True):
+                self.db_client.insert_message(message_data(message))
+                count += 1
+        except Exception as inst:
+            logging.warning(f"Failed loading messages from {self.guild.name} - {channel.name} - {inst}")
+        else:
+            logging.info(f"Loaded {count} messages from {self.guild.name} - {channel.name}")
+
     async def extract_messages(self):
         await self.wait_until_ready()
         for guild in self.guilds:
@@ -88,16 +102,7 @@ class BeanBotClient(discord.Client):
                 self.guild = guild # can this be placed somewhere better?
         while not self.is_closed():
             for channel in self.guild.channels:
-                latest_dt = self.db_client.latest_message_dt(channel.id)
-                if latest_dt is not None:
-                    latest_dt = latest_dt.replace(tzinfo=timezone.utc)
-                try:
-                    count = 0
-                    async for message in channel.history(limit=None, after=latest_dt, oldest_first=True):
-                        self.db_client.insert_message(message_data(message))
-                        count += 1
-                except Exception as inst:
-                    logging.warning(f"Failed loading messages from {self.guild.name} - {channel.name} - {inst}")
-                else:
-                    logging.info(f"Loaded {count} messages from {self.guild.name} - {channel.name}")
+                await self._pull_messages(channel)
+            for thread in self.guild.threads:
+                await self._pull_messages(thread)
             await asyncio.sleep(60)
