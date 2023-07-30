@@ -1,11 +1,12 @@
 import logging
 import asyncio
+import string
 from datetime import datetime, timezone
 from collections import defaultdict
 
 import discord
 import pandas as pd
-from nltk import word_tokenize
+from nltk import word_tokenize, corpus
 
 def dt_as_utc_str(datetime_obj):
     format = '%Y-%m-%d %H:%M:%S.%f'
@@ -20,8 +21,8 @@ def message_data(message):
     else:
         ref_id = None
 
-    # author can be global user or member
-    # set nickname to avoid attribute error on user
+    # author can be global user or member so we're setting
+    # a nickname variable to avoid an attribute error from discord.User
     if type(message.author) is not discord.Member:
         nickname = message.author.display_name
     else:
@@ -44,16 +45,26 @@ def message_data(message):
 def top_words(db_client, limit, user_id):
     word_dict = defaultdict(int)
     messages = db_client.select_messages(user_id)
-    
+
+    stopwords = corpus.stopwords.words('english')
+    stopwords.extend(list(string.punctuation))
+    stopwords.append("'s")
+    stopwords.append("'m")
+    stopwords.append("n't")
+
+    # get count of instances for each token
     for row in messages:
-        tokens = word_tokenize(row.msg_content)
+        tokens = word_tokenize(row.msg_content.lower())
+        tokens = [word for word in tokens if word not in stopwords]
         for word in tokens:
             word_dict[word] += 1
     
+    # convert dictionary to list of tupes for use in dataframe and find top n counts
     word_list = [(word, word_dict[word]) for word in word_dict]
     df = pd.DataFrame(word_list)
     largest = df.nlargest(limit, 1)
     
+    # format output for discord
     output = f"### <@{user_id}>'s Top 10 Words\n"
     for i in range(len(largest)):
         word = largest.iloc[i, 0]
@@ -97,9 +108,13 @@ class BeanBotClient(discord.Client):
 
     async def extract_messages(self):
         await self.wait_until_ready()
+        
+        # placing here to ensure it gets set before calling guild.channels/guild.threads
+        # can this be placed somewhere better?
         for guild in self.guilds:
             if guild.name == self.config.GUILD:
-                self.guild = guild # can this be placed somewhere better?
+                self.guild = guild 
+        
         while not self.is_closed():
             for channel in self.guild.channels:
                 await self._pull_messages(channel)
