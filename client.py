@@ -8,6 +8,8 @@ import discord
 import pandas as pd
 from nltk import word_tokenize, corpus
 
+from message_processing import remove_emojis, remove_punctuation
+
 def dt_as_utc_str(datetime_obj):
     format = '%Y-%m-%d %H:%M:%S.%f'
     utc_dt = datetime_obj.astimezone(timezone.utc)
@@ -42,31 +44,18 @@ def message_data(message):
             'msg_content':message.content}
     return data
 
-def extract_urls(message_text):
-    pass
-
-def extract_user_refs(message_text):
-    pass
-
-def extract_emojis(message_text):
-    pass
-
-
 def top_words(db_client, limit, user_id):
     word_dict = defaultdict(int)
     messages = db_client.select_messages(user_id)
 
     stopwords = corpus.stopwords.words('english')
-    stopwords.extend(list(string.punctuation))
-    stopwords.append("'s")
-    stopwords.append("'m")
-    stopwords.append("n't")
-    stopwords.append("'re")
-    stopwords.append("https")
 
     # get count of instances for each token
     for row in messages:
-        tokens = word_tokenize(row.msg_content.lower())
+        msg = row.msg_content.lower()
+        msg = remove_emojis(msg)
+        msg = remove_punctuation(msg)
+        tokens = word_tokenize(msg)
         tokens = [word for word in tokens if word not in stopwords]
         for word in tokens:
             word_dict[word] += 1
