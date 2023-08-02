@@ -42,6 +42,16 @@ def message_data(message):
             'msg_content':message.content}
     return data
 
+def extract_urls(message_text):
+    pass
+
+def extract_user_refs(message_text):
+    pass
+
+def extract_emojis(message_text):
+    pass
+
+
 def top_words(db_client, limit, user_id):
     word_dict = defaultdict(int)
     messages = db_client.select_messages(user_id)

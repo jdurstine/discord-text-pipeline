@@ -13,11 +13,12 @@ class bigquery_connector:
         if len(errors) > 0:
             print(errors)
 
-    def select_messages(self, userid):
+    def select_messages(self, userid, order='desc'):
         query = f"""
             SELECT msg_content
             FROM {self.project}.{self.env}_raw.raw_messages
-            WHERE user_id={userid}"""
+            WHERE user_id={userid}
+            ORDER BY etl_dt {order}"""
         return self.client.query(query).result()
     
     def latest_message_dt(self, channel_id):
