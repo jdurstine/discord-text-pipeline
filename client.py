@@ -93,8 +93,7 @@ class BeanBotClient(discord.Client):
             channel = message.channel
             await channel.send(top_ten)
 
-    async def _pull_messages(self, channel):
-        latest_dt = self.db_client.latest_message_dt(channel.id)
+    async def _pull_messages(self, channel, latest_dt):
         if latest_dt is not None:
             latest_dt = latest_dt.replace(tzinfo=timezone.utc)
         try:
@@ -117,8 +116,17 @@ class BeanBotClient(discord.Client):
                 self.guild = guild 
         
         while not self.is_closed():
+            latest_dts = self.client_db.latest_message_dts()
             for channel in self.guild.channels:
-                await self._pull_messages(channel)
+                try:
+                    latest_dt = latest_dts[channel.id]
+                except KeyError:
+                    latest_dt = None
+                await self._pull_messages(channel, latest_dt)
             for thread in self.guild.threads:
-                await self._pull_messages(thread)
-            await asyncio.sleep(60)
+                try:
+                    latest_dt = latest_dts[channel.id]
+                except KeyError:
+                    latest_dt = None
+                await self._pull_messages(thread, latest_dt)
+            await asyncio.sleep(15 * 60)

@@ -21,10 +21,10 @@ class bigquery_connector:
             ORDER BY etl_dt {order}"""
         return self.client.query(query).result()
     
-    def latest_message_dt(self, channel_id):
+    def latest_message_dts(self):
         query = f"""
-            SELECT max(msg_created_dt) as max_dt
+            SELECT channel_id, max(msg_created_dt) as max_dt
             FROM {self.project}.{self.env}_raw.raw_messages
-            WHERE channel_id = {channel_id}"""
-        result = [row for row in self.client.query(query).result()]
-        return result[0].max_dt
+            GROUP BY channel_id"""
+        result = {row.channel_id:row.max_dt for row in self.client.query(query).result()}
+        return result
