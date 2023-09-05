@@ -1,80 +1,15 @@
 import logging
 import asyncio
-import string
-from datetime import datetime, timezone
-from collections import defaultdict
+from datetime import timezone, timedelta
+from typing import Optional
 
 import discord
 from discord import app_commands
-import pandas as pd
-from bigquery_connector import bigquery_connector
-from nltk import word_tokenize, corpus
 
 import config
-from message_processing import remove_emojis, remove_punctuation
-
-def dt_as_utc_str(datetime_obj):
-    format = '%Y-%m-%d %H:%M:%S.%f'
-    utc_dt = datetime_obj.astimezone(timezone.utc)
-    return utc_dt.strftime(format)
-
-def message_data(message):
-    etl_dt = datetime.utcnow()
-
-    if message.reference is not None:
-        ref_id = message.reference.message_id
-    else:
-        ref_id = None
-
-    # author can be global user or member so we're setting
-    # a nickname variable to avoid an attribute error from discord.User
-    if type(message.author) is not discord.Member:
-        nickname = message.author.display_name
-    else:
-        nickname = message.author.nick
-
-    data = {'etl_dt':dt_as_utc_str(etl_dt),
-            'msg_id':message.id,
-            'msg_created_dt':dt_as_utc_str(message.created_at),
-            'channel_id':message.channel.id,
-            'channel_name':message.channel.name,
-            'user_id':message.author.id,
-            'user_global_name':message.author.global_name,
-            'user_display_name':message.author.display_name,
-            'user_nickname':nickname,
-            'user_name':message.author.name,
-            'ref_msg_id':ref_id,
-            'msg_content':message.content}
-    return data
-
-def top_words(db_client, limit, user_id):
-    word_dict = defaultdict(int)
-    messages = db_client.select_messages(user_id)
-
-    stopwords = corpus.stopwords.words('english')
-
-    # get count of instances for each token
-    for row in messages:
-        msg = row.msg_content.lower()
-        msg = remove_emojis(msg)
-        msg = remove_punctuation(msg)
-        tokens = word_tokenize(msg)
-        tokens = [word for word in tokens if word not in stopwords]
-        for word in tokens:
-            word_dict[word] += 1
-    
-    # convert dictionary to list of tupes for use in dataframe and find top n counts
-    word_list = [(word, word_dict[word]) for word in word_dict]
-    df = pd.DataFrame(word_list)
-    largest = df.nlargest(limit, 1)
-    
-    # format output for discord
-    output = f"### <@{user_id}>'s Top 10 Words\n"
-    for i in range(len(largest)):
-        word = largest.iloc[i, 0]
-        count = largest.iloc[i, 1]
-        output = output + f'{i}. {word} - {count}\n'
-    return output
+from bigquery_connector import bigquery_connector
+from utils import message_data, dt_as_utc_str
+from message_processing import top_words
 
 bigquery = bigquery_connector(config.PROJECT, config.ENVIRONMENT)
 
@@ -149,8 +84,16 @@ discord.utils.setup_logging()
 client = BeanBotClient(intents=intents, db_client=bigquery, config=config)
 
 @client.tree.command()
-async def top(interaction):
-    top_ten = top_words(bigquery, 10, interaction.user.id)
+@app_commands.describe(days = 'Number of days to aggregate over')
+async def top(interaction, days: Optional[int]=None):
+    """Pull your top 10 most used words."""
+    if days is not None:
+        start = interaction.created_at - timedelta(days=days)
+        end = interaction.created_at
+    else:
+        start = 'NULL'
+        end = 'NULL'
+    top_ten = top_words(bigquery, 10, interaction.user.id, start, end)
     await interaction.response.send_message(top_ten)
 
 client.run(config.TOKEN)

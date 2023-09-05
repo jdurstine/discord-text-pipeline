@@ -1,4 +1,7 @@
+from datetime import datetime
 from google.cloud import bigquery
+
+from utils import dt_as_utc_str
 
 class bigquery_connector:
     
@@ -13,14 +16,34 @@ class bigquery_connector:
         if len(errors) > 0:
             print(errors)
 
-    def select_messages(self, userid, order='desc'):
+    def select_messages(self, userid, start = 'NULL', end = 'NULL', order='desc'):
+
+        if type(start) is not datetime and start != 'NULL':
+            raise Exception('start was not supplied with a valid argument.')
+        
+        if type(end) is not datetime and end != 'NULL':
+            raise Exception('end was not supplied with a valid argument.')
+
+        if order not in ('asc', 'desc'):
+            raise Exception('order was not supplied with a valid argument.')
+
+        if start != 'NULL':
+            start = f"'{dt_as_utc_str(start)}'"
+
+        if end != 'NULL':
+            end = f"'{dt_as_utc_str(end)}'"
+
         query = f"""
             SELECT msg_content
             FROM {self.project}.{self.env}_raw.raw_messages
             WHERE user_id={userid}
+                AND msg_created_dt BETWEEN 
+                    coalesce(datetime({start}), datetime('1990-01-01'))
+                    AND coalesce(datetime({end}), datetime('9999-01-01'))
             ORDER BY etl_dt {order}"""
+        
         return self.client.query(query).result()
-    
+        
     def latest_message_dts(self):
         query = f"""
             SELECT channel_id, max(msg_created_dt) as max_dt
