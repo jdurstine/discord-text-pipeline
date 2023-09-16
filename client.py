@@ -50,7 +50,6 @@ class BeanBotClient(discord.Client):
 
     async def extract_messages(self):
         await self.wait_until_ready()
-        
         # placing here to ensure it gets set before calling guild.channels/guild.threads
         # can this be placed somewhere better?
         for guild in self.guilds:
@@ -58,8 +57,9 @@ class BeanBotClient(discord.Client):
                 self.guild = guild 
         
         while not self.is_closed():
-            latest_dts = self.client_db.latest_message_dts()
+            latest_dts = self.db_client.latest_message_dts()
             for channel in self.guild.channels:
+                
                 try:
                     latest_dt = latest_dts[channel.id]
                 except KeyError:
