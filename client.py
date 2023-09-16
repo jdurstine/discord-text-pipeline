@@ -87,6 +87,7 @@ client = BeanBotClient(intents=intents, db_client=bigquery, config=config)
 @app_commands.describe(days = 'Number of days to aggregate over')
 async def top(interaction, days: Optional[int]=None):
     """Pull your top 10 most used words."""
+    await interaction.response.defer()
     if days is not None:
         start = interaction.created_at - timedelta(days=days)
         end = interaction.created_at
@@ -94,6 +95,6 @@ async def top(interaction, days: Optional[int]=None):
         start = 'NULL'
         end = 'NULL'
     top_ten = top_words(bigquery, 10, interaction.user.id, start, end)
-    await interaction.response.send_message(top_ten)
+    await interaction.followup.send(top_ten)
 
 client.run(config.TOKEN)
