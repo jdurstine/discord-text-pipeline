@@ -57,15 +57,23 @@ class BeanBotClient(discord.Client):
             if guild.name == self.config.GUILD:
                 self.guild = guild
 
-        etl_dt = datetime.utcnow()
+        while not self.is_closed():
+            etl_dt = datetime.utcnow()
 
-        for channel in self.guild.voice_channels:
-            if len(channel.members) == 0:
-                self.db_client.insert_voice_activity(voice_data(channel, etl_dt))
+            try: 
+                for channel in self.guild.voice_channels:
+                    print(channel.name)
+                    if len(channel.members) == 0:
+                        self.db_client.insert_voice_activity(voice_data(channel, etl_dt))
+                    else:
+                        for member in channel.members:
+                            self.db_client.insert_voice_activity(voice_data(channel, etl_dt, member))
+            except Exception as inst:
+                logging.warning(f"Failed loading voice activity from {self.guild.name} - {inst}")
             else:
-                for member in channel.members:
-                    self.db_client.insert_voice_activity(voice_data(channel, etl_dt, member))
-        await asyncio.sleep(5 * 60)
+                logging.info(f"Loaded voice activity from {self.guild.name}")
+
+            await asyncio.sleep(5 * 60)
         
     async def extract_messages(self):
         await self.wait_until_ready()
