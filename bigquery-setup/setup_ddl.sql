@@ -19,7 +19,7 @@ CREATE TABLE dev_raw.raw_channels (
     channel_id INT NOT NULL,
     channel_name STRING NOT NULL,
     channel_status STRING,
-    channel_type NOT NULL
+    channel_type STRING NOT NULL
 )
 
 CREATE TABLE dev_raw.raw_users (

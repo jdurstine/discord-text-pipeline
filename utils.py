@@ -7,6 +7,20 @@ def dt_as_utc_str(datetime_obj):
     utc_dt = datetime_obj.astimezone(timezone.utc)
     return utc_dt.strftime(format)
 
+def channel_data(channel, etl_dt):
+
+    data = {
+        'etl_dt':dt_as_utc_str(etl_dt),
+        'guild_id':channel.guild.id,
+        'channel_id':channel.id,
+        'channel_name':channel.name,
+        # waiting for wrapper to support voice channel status
+        'channel_status':None, 
+        'channel_type':f'{channel.type}'
+    }
+
+    return data
+
 def voice_data(channel, etl_dt, member = None):
 
     if member is not None:

@@ -50,6 +50,12 @@ class bigquery_connector:
         if len(errors) > 0:
             print(errors)
 
+    def insert_channel(self, channel_data_dict):
+        table_id = f"{self.project}.{self.env}_raw.raw_channels"
+        errors = self.client.insert_rows_json(table_id, [channel_data_dict])
+        if len(errors) > 0:
+            print(errors)
+            
     def latest_message_dts(self):
         query = f"""
             SELECT channel_id, max(msg_created_dt) as max_dt
