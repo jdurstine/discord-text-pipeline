@@ -43,7 +43,13 @@ class bigquery_connector:
             ORDER BY etl_dt {order}"""
         
         return self.client.query(query).result()
-        
+    
+    def insert_voice_activity(self, voice_activity_dict):
+        table_id = f"{self.project}.{self.env}_raw.raw_voice_activity"
+        errors = self.client.insert_rows_json(table_id, [voice_activity_dict])
+        if len(errors) > 0:
+            print(errors)
+
     def latest_message_dts(self):
         query = f"""
             SELECT channel_id, max(msg_created_dt) as max_dt

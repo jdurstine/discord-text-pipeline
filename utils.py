@@ -7,6 +7,20 @@ def dt_as_utc_str(datetime_obj):
     utc_dt = datetime_obj.astimezone(timezone.utc)
     return utc_dt.strftime(format)
 
+def voice_data(channel, etl_dt, member = None):
+
+    if member is not None:
+        user_id = member.id
+    else:
+        user_id = None
+
+    data = {'etl_dt':dt_as_utc_str(etl_dt),
+            'channel_id':channel.id,
+            'channel_name':channel.name,
+            'user_id':user_id}
+    
+    return data
+
 def message_data(message):
     etl_dt = datetime.utcnow()
 
@@ -34,4 +48,5 @@ def message_data(message):
             'user_name':message.author.name,
             'ref_msg_id':ref_id,
             'msg_content':message.content}
+    
     return data

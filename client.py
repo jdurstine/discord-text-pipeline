@@ -1,6 +1,6 @@
 import logging
 import asyncio
-from datetime import timezone, timedelta
+from datetime import timezone, timedelta, datetime
 from typing import Optional
 
 import discord
@@ -8,7 +8,7 @@ from discord import app_commands
 
 import config
 from bigquery_connector import bigquery_connector
-from utils import message_data, dt_as_utc_str
+from utils import message_data, voice_data, dt_as_utc_str
 from message_processing import top_words
 
 bigquery = bigquery_connector(config.PROJECT, config.ENVIRONMENT)
@@ -28,7 +28,8 @@ class BeanBotClient(discord.Client):
 
     async def setup_hook(self) -> None:
         # create the background task and run it in the background
-        self.bg_task = self.loop.create_task(self.extract_messages())
+        # self.message_extract = self.loop.create_task(self.extract_messages())
+        self.voice_extract = self.loop.create_task(self.extract_voice_activity())
 
         # set up the command tree and sync all our commands to the chosen guild
         guild = discord.Object(id=self.config.GUILD_ID)
@@ -48,18 +49,35 @@ class BeanBotClient(discord.Client):
         else:
             logging.info(f"Loaded {count} messages from {self.guild.name} - {channel.name}")
 
+    async def extract_voice_activity(self):
+        await self.wait_until_ready()
+        # placing here to ensure it gets set before calling guild.channels/guild.threads
+        # can this be placed somewhere better?
+        for guild in self.guilds:
+            if guild.name == self.config.GUILD:
+                self.guild = guild
+
+        etl_dt = datetime.utcnow()
+
+        for channel in self.guild.voice_channels:
+            if len(channel.members) == 0:
+                self.db_client.insert_voice_activity(voice_data(channel, etl_dt))
+            else:
+                for member in channel.members:
+                    self.db_client.insert_voice_activity(voice_data(channel, etl_dt, member))
+        await asyncio.sleep(5 * 60)
+        
     async def extract_messages(self):
         await self.wait_until_ready()
         # placing here to ensure it gets set before calling guild.channels/guild.threads
         # can this be placed somewhere better?
         for guild in self.guilds:
             if guild.name == self.config.GUILD:
-                self.guild = guild 
+                self.guild = guild
         
         while not self.is_closed():
             latest_dts = self.db_client.latest_message_dts()
             for channel in self.guild.channels:
-                
                 try:
                     latest_dt = latest_dts[channel.id]
                 except KeyError:
