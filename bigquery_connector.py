@@ -14,7 +14,7 @@ class bigquery_connector:
         table_id = f"{self.project}.{self.env}_raw.raw_messages"
         errors = self.client.insert_rows_json(table_id, [message_dict])
         if len(errors) > 0:
-            print(errors)
+            raise RuntimeError("Issue encountered inserting message data.")
 
     def select_messages(self, userid, start = 'NULL', end = 'NULL', order='desc'):
 
@@ -48,14 +48,20 @@ class bigquery_connector:
         table_id = f"{self.project}.{self.env}_raw.raw_voice_activity"
         errors = self.client.insert_rows_json(table_id, [voice_activity_dict])
         if len(errors) > 0:
-            print(errors)
+            raise RuntimeError("Issue encountered inserting voice activity data.")
 
     def insert_channel(self, channel_data_dict):
         table_id = f"{self.project}.{self.env}_raw.raw_channels"
         errors = self.client.insert_rows_json(table_id, [channel_data_dict])
         if len(errors) > 0:
-            print(errors)
-            
+            raise RuntimeError("Issue encountered inserting channel data.")
+    
+    def insert_member(self, member_data_dict):
+        table_id = f"{self.project}.{self.env}_raw.raw_members"
+        errors = self.client.insert_rows_json(table_id, [member_data_dict])
+        if len(errors) > 0:
+            raise RuntimeError("Issue encountered inserting member data.")
+                       
     def latest_message_dts(self):
         query = f"""
             SELECT channel_id, max(msg_created_dt) as max_dt

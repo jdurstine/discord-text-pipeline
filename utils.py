@@ -35,9 +35,19 @@ def voice_data(channel, etl_dt, member = None):
     
     return data
 
-def message_data(message):
-    etl_dt = datetime.utcnow()
+def member_data(member, etl_dt):
 
+    data = {'etl_dt':dt_as_utc_str(etl_dt),
+            'guild_id':member.guild.id,
+            'member_id':member.id,
+            'member_global_name':member.global_name,
+            'member_display_name':member.display_name,
+            'member_nickname':member.nick,
+            'member_name':member.name}
+
+    return data
+
+def message_data(message, etl_dt):
     if message.reference is not None:
         ref_id = message.reference.message_id
     else:

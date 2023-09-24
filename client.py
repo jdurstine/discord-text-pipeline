@@ -8,7 +8,7 @@ from discord import app_commands
 
 import config
 from bigquery_connector import bigquery_connector
-from utils import message_data, voice_data, channel_data, dt_as_utc_str
+from utils import message_data, voice_data, channel_data, member_data, dt_as_utc_str
 from message_processing import top_words
 
 bigquery = bigquery_connector(config.PROJECT, config.ENVIRONMENT)
@@ -31,19 +31,20 @@ class BeanBotClient(discord.Client):
         self.message_extract = self.loop.create_task(self.extract_messages())
         self.voice_extract = self.loop.create_task(self.extract_voice_activity())
         self.channel_extract = self.loop.create_task(self.extract_channels())
+        self.member_extract = self.loop.create_task(self.extract_members())
 
         # set up the command tree and sync all our commands to the chosen guild
         guild = discord.Object(id=self.config.GUILD_ID)
         self.tree.copy_global_to(guild=guild)
         await self.tree.sync(guild=guild)
 
-    async def _pull_messages(self, channel, latest_dt):
+    async def _pull_messages(self, channel, latest_dt, etl_dt):
         if latest_dt is not None:
             latest_dt = latest_dt.replace(tzinfo=timezone.utc)
         try:
             count = 0
             async for message in channel.history(limit=None, after=latest_dt, oldest_first=True):
-                self.db_client.insert_message(message_data(message))
+                self.db_client.insert_message(message_data(message, etl_dt))
                 count += 1
         except Exception as inst:
             logging.warning(f"Failed loading messages from {self.guild.name} - {channel.name} - {inst}")
@@ -92,9 +93,29 @@ class BeanBotClient(discord.Client):
             except Exception as inst:
                 logging.warning(f"Failed loading channels from {self.guild.name} - {inst}")
             else:
-                logging.info(f"Loaded voice channels from {self.guild.name}")
+                logging.info(f"Loaded channels from {self.guild.name}")
 
             await asyncio.sleep(5 * 60)
+
+    async def extract_members(self):
+        await self.wait_until_ready()
+        # placing here to ensure it gets set before calling guild.channels/guild.threads
+        # can this be placed somewhere better?
+        for guild in self.guilds:
+            if guild.name == self.config.GUILD:
+                self.guild = guild
+        
+        while not self.is_closed():
+            etl_dt = datetime.utcnow()
+            try:
+                for member in self.guild.members:
+                    self.db_client.insert_member(member_data(member, etl_dt))
+            except Exception as inst:
+                logging.warning(f"Failed loading members from {self.guild.name} - {inst}")
+            else:
+                logging.info(f"Loaded members from {self.guild.name}")
+
+            await asyncio.sleep(5 * 60)   
 
     async def extract_messages(self):
         await self.wait_until_ready()
@@ -113,14 +134,14 @@ class BeanBotClient(discord.Client):
                     latest_dt = latest_dts[channel.id]
                 except KeyError:
                     latest_dt = None
-                await self._pull_messages(channel, latest_dt)
+                await self._pull_messages(channel, latest_dt, etl_dt)
             for thread in self.guild.threads:
                 try:
                     latest_dt = latest_dts[channel.id]
                 except KeyError:
                     latest_dt = None
-                await self._pull_messages(thread, latest_dt)
-            await asyncio.sleep(15 * 60)
+                await self._pull_messages(thread, latest_dt, etl_dt)
+            await asyncio.sleep(30 * 60)
 
 bigquery = bigquery_connector(config.PROJECT, config.ENVIRONMENT)
 
