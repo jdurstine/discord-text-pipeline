@@ -137,7 +137,7 @@ class BeanBotClient(discord.Client):
                 await self._pull_messages(channel, latest_dt, etl_dt)
             for thread in self.guild.threads:
                 try:
-                    latest_dt = latest_dts[channel.id]
+                    latest_dt = latest_dts[thread.id]
                 except KeyError:
                     latest_dt = None
                 await self._pull_messages(thread, latest_dt, etl_dt)
