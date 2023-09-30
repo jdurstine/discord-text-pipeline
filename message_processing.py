@@ -5,6 +5,8 @@ from collections import defaultdict
 import pandas as pd
 from nltk import corpus, word_tokenize
 
+import utils
+
 EMOJI_NAME = r":[\w\d]+:"
 EMOJI_FULL = r"<a?:[\w\d]+:\d+>"
 URL = ""
@@ -49,18 +51,11 @@ def top_words(db_client, limit, user_id, start, end):
     word_list = [(word, word_dict[word]) for word in word_dict]
     df = pd.DataFrame(word_list)
     
-    if len(df) > 0:
-        # truncate data to words with largest counts
-        # will not work if there is no data
-        largest = df.nlargest(limit, 1)
+    return utils.largest_output(df, limit, user_id, 'words')
 
-        # format output for discord
-        output = f"### <@{user_id}>'s Top 10 Words\n"
-        for i in range(len(largest)):
-            word = largest.iloc[i, 0]
-            count = largest.iloc[i, 1]
-            output = output + f'{i}. {word} - {count}\n'
-    else:
-        # inform the user no words were found
-        output = f'No words found in given timeframe for <@{user_id}>'
-    return output
+def top_channels(db_client, limit, user_id, start, end):
+    channels = db_client.select_channel_counts(user_id, start, end)
+    channels_list = [(row.channel_name, row.count) for row in channels]
+    df = pd.DataFrame(channels_list)
+
+    return utils.largest_output(df, limit, user_id, 'channels')

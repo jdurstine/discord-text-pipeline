@@ -9,7 +9,7 @@ from discord import app_commands
 import config
 from bigquery_connector import bigquery_connector
 from utils import message_data, voice_data, channel_data, member_data, dt_as_utc_str
-from message_processing import top_words
+from message_processing import top_words, top_channels
 
 bigquery = bigquery_connector(config.PROJECT, config.ENVIRONMENT)
 
@@ -155,7 +155,7 @@ client = BeanBotClient(intents=intents, db_client=bigquery, config=config)
 
 @client.tree.command()
 @app_commands.describe(days = 'Number of days to aggregate over')
-async def top(interaction, days: Optional[int]=None):
+async def topwords(interaction, days: Optional[int]=None):
     """Pull your top 10 most used words."""
     await interaction.response.defer()
     if days is not None:
@@ -165,6 +165,20 @@ async def top(interaction, days: Optional[int]=None):
         start = 'NULL'
         end = 'NULL'
     top_ten = top_words(bigquery, 10, interaction.user.id, start, end)
+    await interaction.followup.send(top_ten)
+
+@client.tree.command()
+@app_commands.describe(days = 'Number of days to aggregate over')
+async def topchannels(interaction, days: Optional[int]=None):
+    """Pull your top 10 most used channels."""
+    await interaction.response.defer()
+    if days is not None:
+        start = interaction.created_at - timedelta(days=days)
+        end = interaction.created_at
+    else:
+        start = 'NULL'
+        end = 'NULL'
+    top_ten = top_channels(bigquery, 10, interaction.user.id, start, end)
     await interaction.followup.send(top_ten)
 
 client.run(config.TOKEN)

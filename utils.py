@@ -7,6 +7,26 @@ def dt_as_utc_str(datetime_obj):
     utc_dt = datetime_obj.astimezone(timezone.utc)
     return utc_dt.strftime(format)
 
+def largest_output(df, limit, user_id, entity_name):
+    """Takes in a 2 column dataframe of (entity, count), orders it,
+    then returns a ranking formatted for discord."""
+    
+    if len(df) > 0:
+        # truncate data to words with largest counts
+        # will not work if there is no data
+        largest = df.nlargest(limit, 1)
+
+        # format output for discord
+        output = f"### <@{user_id}>'s Top 10 {entity_name.capitalize()}\n"
+        for i in range(len(largest)):
+            entity = largest.iloc[i, 0]
+            count = largest.iloc[i, 1]
+            output = output + f'{i}. {entity} - {count}\n'
+    else:
+        # inform the user no words were found
+        output = f'No {entity_name.lower()} found in given timeframe for <@{user_id}>'
+    return output
+
 def channel_data(channel, etl_dt):
 
     data = {
