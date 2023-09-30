@@ -90,6 +90,8 @@ class BeanBotClient(discord.Client):
             try:
                 for channel in self.guild.channels:
                     self.db_client.insert_channel(channel_data(channel, etl_dt))
+                for thread in self.guild.threads:
+                    self.db_client.insert_channel(channel_data(thread, etl_dt))
             except Exception as inst:
                 logging.warning(f"Failed loading channels from {self.guild.name} - {inst}")
             else:
