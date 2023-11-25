@@ -51,7 +51,8 @@ def voice_data(channel, etl_dt, member = None):
     data = {'etl_dt':dt_as_utc_str(etl_dt),
             'channel_id':channel.id,
             'channel_name':channel.name,
-            'user_id':user_id}
+            'user_id':user_id,
+            'guild_id':channel.guild.id}
     
     return data
 
