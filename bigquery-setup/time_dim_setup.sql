@@ -1,5 +1,9 @@
 CREATE TABLE prod_warehouse.time_dim (
-
+  PRIMARY KEY (time_id) NOT ENFORCED,
+  time_id STRING NOT NULL,
+  hour INT64 NOT NULL,
+  minute INT64 NOT NULL,
+  second INT64 NOT NULL
 )
 
 INSERT INTO
