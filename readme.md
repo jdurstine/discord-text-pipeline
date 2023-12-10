@@ -9,13 +9,13 @@ This project is the entry point for an end-to-end data pipeline. It has four mai
 3. DBT
 4. BI Presentation Layer (TBD)
 
-The entry point into this pipeline is the discord API. To access this I've used discord.py, a python wrapper. discord.py also doubles to as our means to create an interactive bot on the server, serving up curated metrics on demand.
+The entry point into this pipeline is the Discord API. To access this discord.py, a python wrapper, is used. 
 
-Bigquery is used as our data warehouse with DBT implementing out transformations.
+Bigquery is used as our data warehouse with DBT performing transformations on raw Discord data.
 
-Finally, a presentation layer will eventually be created. This will tentatively use looker.
+Finally, data collected from Discord is either presented through (tentatively) looker, or served to a Discord server via the Discord API.
 
-![Pipeline Dataflow](asssets/pipeline_dataflow.png)
+![Pipeline Dataflow](/assets/Pipeline_Dataflow.png)
 
 ## Features
 
@@ -41,4 +41,4 @@ The bot has a number of currently released and planned commands.
 
 Currently only one datamart is available - voice activity. This datamart hosts information on which server members were active in what channels at what times.
 
-![Voice Activity ERD](assests/voice_activity_erc.png)
+![Voice Activity ERD](/assets/Voice_Activity_ERD.png)
