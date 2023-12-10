@@ -15,7 +15,7 @@ Bigquery is used as our data warehouse with DBT implementing out transformations
 
 Finally, a presentation layer will eventually be created. This will tentatively use looker.
 
-[Pipeline Dataflow](asssets/pipeline_dataflow.png)
+![Pipeline Dataflow](asssets/pipeline_dataflow.png)
 
 ## Features
 
@@ -41,4 +41,4 @@ The bot has a number of currently released and planned commands.
 
 Currently only one datamart is available - voice activity. This datamart hosts information on which server members were active in what channels at what times.
 
-[Voice Activity ERD](assests/voice_activity_erc.png)
+![Voice Activity ERD](assests/voice_activity_erc.png)
