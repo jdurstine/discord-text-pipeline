@@ -2,12 +2,10 @@
 
 This project is the entry point for an end-to-end data pipeline. It has four main components.
 
-1. Discord Bot
-    a. API Connection for
-    b. Self-serve Analytics Bot
-2. Bigquery
-3. DBT
-4. BI Presentation Layer (TBD)
+1. Discord Bot (API Connection, Self-serve Analytics)
+3. Bigquery
+4. DBT
+5. BI Presentation Layer (TBD)
 
 The entry point into this pipeline is the Discord API. To access this discord.py, a python wrapper, is used. 
 
