@@ -13,7 +13,7 @@ URL = ""
 USER_REF = r"<@:[\d]+>"
 
 def remove_punctuation(message_content):
-    punctuation = re.escape(string.punctuation)
+    punctuation = re.escape(string.punctuation + '’') # adding right handed apostrophe to solve edge case
     msg = re.sub(f'[{punctuation}]?', '', message_content)
     return msg
 
