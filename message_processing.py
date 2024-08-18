@@ -31,12 +31,11 @@ def remove_emojis(message_content):
     message = re.sub(EMOJI_FULL, '', message_content)
     return message
 
-def top_words(db_client, limit, user_id, start, end):
+def count_words(messages):
+
     word_dict = defaultdict(int)
-    messages = db_client.select_messages(user_id, start, end)
-
     stopwords = corpus.stopwords.words('english')
-
+    
     # get count of instances for each token
     for row in messages:
         msg = row.msg_content.lower()
@@ -46,9 +45,16 @@ def top_words(db_client, limit, user_id, start, end):
         tokens = [word for word in tokens if word not in stopwords]
         for word in tokens:
             word_dict[word] += 1
+
+    return word_dict
+
+def top_words(db_client, limit, user_id, start, end):
     
-    # convert dictionary to list of tupes for use in dataframe and find top n counts
-    word_list = [(word, word_dict[word]) for word in word_dict]
+    messages = db_client.select_messages(user_id, start, end)
+    word_counts = count_words(messages)
+    
+    # convert dictionary to list of tuples for use in dataframe and find top n counts
+    word_list = [(word, word_counts[word]) for word in word_counts]
     df = pd.DataFrame(word_list)
     
     return utils.largest_output(df, limit, user_id, 'words')
@@ -59,3 +65,31 @@ def top_channels(db_client, limit, user_id, start, end):
     df = pd.DataFrame(channels_list)
 
     return utils.largest_output(df, limit, user_id, 'channels')
+
+def average_term_use_per_message(word_counts, total_messages):
+    pass
+
+def top_unique_words(db_client, limit, user_id):
+
+    # 1. calculate corpus average uses per message E(T_c)
+    # 2. calculate individual corpus average uses per message E(T_p)
+    # 3. rank words by dE = E(T_p) - E(T_c)
+    
+    # corpus_total_messages = db_client.total_message_count()
+    corpus_word_counts = count_words(db_client.select_messages(userid=None))
+    corpus_total_word_count = sum(corpus_word_counts.values())
+    corpus_word_percentages = {word: corpus_word_counts[word]/float(corpus_total_word_count)
+                               for word in corpus_word_counts}
+    
+    # user_total_messages = db_client.message_count(user_id)
+    user_word_counts = count_words(db_client.select_messages(userid=user_id))
+    user_total_word_count = sum(user_word_counts.values())
+    user_word_percentages = {word: user_word_counts[word]/float(user_total_word_count) for word in user_word_counts}
+
+    user_adjusted_word_percentages = {word: user_word_percentages[word] - corpus_word_percentages[word]
+                                      for word in user_word_percentages}
+    
+    user_adjusted_word_percentages = pd.DataFrame([(word, user_adjusted_word_percentages[word])
+                                                     for word in user_adjusted_word_percentages])
+
+    return utils.largest_output(user_adjusted_word_percentages, limit, user_id, 'unique words')
